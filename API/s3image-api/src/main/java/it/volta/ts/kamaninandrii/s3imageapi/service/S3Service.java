@@ -12,42 +12,40 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 
 @Service
 public class S3Service {
 
     private final AmazonS3 amazonS3;
     private final String bucketName;
-    private final AtomicInteger fileCounter;
 
     public S3Service(AmazonS3 amazonS3) {
         this.amazonS3 = amazonS3;
 
-
         Dotenv dotenv = Dotenv.load();
-
-
         this.bucketName = dotenv.get("AWS_BUCKET_NAME");
-
 
         if (bucketName == null) {
             throw new IllegalArgumentException("Missing AWS_S3_BUCKET_NAME environment variable");
         }
-
-        this.fileCounter = new AtomicInteger(1);
     }
-
 
     public String uploadFile(MultipartFile multipartFile) {
         File file = convertMultipartFileToFile(multipartFile);
 
-        // Create a file name using the counter
-        String fileName = "img_" + fileCounter.getAndIncrement();
+        // Сохраняем расширение файла (если есть)
+        String originalFilename = multipartFile.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : "";
+
+        // Генерируем уникальное имя файла
+        String fileName = "img_" + UUID.randomUUID() + extension;
 
         try {
             amazonS3.putObject(new PutObjectRequest(bucketName, fileName, file));
-            return "File uploaded successfully: " + fileName;
+            return "File uploaded successfully: " + getFileUrl(fileName);
         } catch (Exception e) {
             e.printStackTrace();
             return "Error uploading file";
@@ -56,8 +54,25 @@ public class S3Service {
         }
     }
 
-    // Download file from S3 bucket
-    public InputStream downloadFile(String fileName) {
+    public String getFileUrl(String fileName) {
+        return amazonS3.getUrl(bucketName, fileName).toString();
+    }
+
+    public String getRandomFileUrl() {
+        ListObjectsV2Result result = amazonS3.listObjectsV2(bucketName);
+        List<S3ObjectSummary> objectSummaries = result.getObjectSummaries();
+
+        if (objectSummaries.isEmpty()) {
+            throw new RuntimeException("No files found in the bucket");
+        }
+
+        Random random = new Random();
+        String randomFileName = objectSummaries.get(random.nextInt(objectSummaries.size())).getKey();
+
+        return getFileUrl(randomFileName);
+    }
+
+    public InputStream fetchFileFromS3(String fileName) {
         try {
             S3Object s3Object = amazonS3.getObject(bucketName, fileName);
             return s3Object.getObjectContent();
@@ -66,24 +81,22 @@ public class S3Service {
         }
     }
 
-    // Convert MultipartFile to File
     private File convertMultipartFileToFile(MultipartFile multipartFile) {
-        File file = new File(multipartFile.getOriginalFilename());
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            fos.write(multipartFile.getBytes());
+        try {
+            File file = File.createTempFile("upload", null);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(multipartFile.getBytes());
+            }
+            return file;
         } catch (IOException e) {
             throw new RuntimeException("Error converting MultipartFile to File", e);
         }
-        return file;
     }
 
-
-    public InputStream getRandomFile() {
-
+    public String getRandomFileNameFromS3() {
         ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request()
                 .withBucketName(bucketName);
         ListObjectsV2Result result = amazonS3.listObjectsV2(listObjectsV2Request);
-
 
         List<S3ObjectSummary> objectSummaries = result.getObjectSummaries();
 
@@ -91,28 +104,9 @@ public class S3Service {
             throw new RuntimeException("No files found in the bucket");
         }
 
-
+        // Получаем случайный объект из списка
         Random random = new Random();
         S3ObjectSummary randomObjectSummary = objectSummaries.get(random.nextInt(objectSummaries.size()));
-
-        S3Object s3Object = amazonS3.getObject(bucketName, randomObjectSummary.getKey());
-        return s3Object.getObjectContent();
-    }
-
-
-    public String getRandomFileName() {
-        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                .withBucketName(bucketName);
-        ObjectListing objectListing = amazonS3.listObjects(listObjectsRequest);
-        List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
-
-        Random rand = new Random();
-        S3ObjectSummary randomObject = objectSummaries.get(rand.nextInt(objectSummaries.size()));
-
-        return randomObject.getKey();
-    }
-
-    public String getFileUrl(String fileName) {
-        return amazonS3.getUrl(bucketName, fileName).toString();
+        return randomObjectSummary.getKey();
     }
 }

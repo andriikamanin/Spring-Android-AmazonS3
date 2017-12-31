@@ -29,28 +29,36 @@ public class S3Controller {
     }
 
 
-    @GetMapping("/file-url/{fileName}")
-    public ResponseEntity<Resource> getFileUrl(@PathVariable String fileName) throws IOException {
-        InputStream fileInputStream = s3Service.downloadFile(fileName);
+    @GetMapping("/file/{fileName}")
+    public ResponseEntity<Resource> getFileAsResource(@PathVariable String fileName) throws IOException {
+        InputStream fileInputStream = s3Service.fetchFileFromS3(fileName);
         ByteArrayResource resource = new ByteArrayResource(fileInputStream.readAllBytes());
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + fileName) // Изменено на "inline"
-                .contentType(MediaType.IMAGE_JPEG) // Укажите правильный MIME-тип, если изображения могут быть PNG или другие форматы, можно определить динамически
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + fileName) // Отображение в браузере
+                .contentType(MediaType.IMAGE_JPEG) // Можно динамически определять MIME-тип
                 .contentLength(resource.contentLength())
                 .body(resource);
     }
 
 
-    @GetMapping("/random-file")
-    public ResponseEntity<Resource> getRandomFile() throws IOException {
-        String randomFileName = s3Service.getRandomFileName();
-        InputStream fileInputStream = s3Service.downloadFile(randomFileName);
-        System.out.println("Trying to download file: " + randomFileName);
-        String contentType = "image/jpeg";
 
+    @GetMapping("/random-image")
+    public ResponseEntity<Resource> getRandomImageFromS3() throws IOException {
+        // Получаем случайное имя файла
+        String randomFileName = s3Service.getRandomFileNameFromS3();
+
+        // Загружаем файл из S3
+        InputStream fileInputStream = s3Service.fetchFileFromS3(randomFileName);
+        System.out.println("Trying to fetch random file: " + randomFileName);
+
+        // Указываем MIME-тип для изображения
+        String contentType = "image/jpeg";  // Здесь можно сделать более гибким, определяя формат изображения
+
+        // Читаем данные из InputStream в ресурс
         ByteArrayResource resource = new ByteArrayResource(fileInputStream.readAllBytes());
 
+        // Возвращаем ресурс как часть ответа
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .contentLength(resource.contentLength())
