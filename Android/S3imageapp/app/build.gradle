@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'it.volta.ts.kamaninandrii.s3imageapp'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "it.volta.ts.kamaninandrii.s3imageapp"
