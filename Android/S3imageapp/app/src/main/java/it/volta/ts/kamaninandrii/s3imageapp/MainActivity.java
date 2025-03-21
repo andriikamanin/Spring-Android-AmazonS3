@@ -1,20 +1,21 @@
 package it.volta.ts.kamaninandrii.s3imageapp;
 
-import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.bumptech.glide.Glide;
+import com.squareup.picasso.Picasso;
+
+import java.io.InputStream;
+
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -43,19 +44,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadRandomImage() {
-        RetrofitClient.getApiService().getRandomFileUrl().enqueue(new Callback<String>() {
+        RetrofitClient.getApiService().getRandomFile().enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<String> call, Response<String> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    String imageUrl = response.body();
-                    Glide.with(MainActivity.this).load(imageUrl).into(imageView);
+                    // Получаем поток байтов
+                    InputStream inputStream = response.body().byteStream();
+                    // Декодируем в Bitmap
+                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                    // Устанавливаем картинку в ImageView
+                    imageView.setImageBitmap(bitmap);
                 } else {
                     Toast.makeText(MainActivity.this, "Ошибка загрузки", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<String> call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Toast.makeText(MainActivity.this, "Ошибка сети", Toast.LENGTH_SHORT).show();
             }
         });
