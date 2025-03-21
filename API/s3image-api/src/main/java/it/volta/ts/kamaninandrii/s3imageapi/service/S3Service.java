@@ -11,12 +11,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class S3Service {
 
     private final AmazonS3 amazonS3;
     private final String bucketName;
+    private final AtomicInteger fileCounter;
 
     public S3Service(AmazonS3 amazonS3) {
         this.amazonS3 = amazonS3;
@@ -31,12 +33,16 @@ public class S3Service {
         if (bucketName == null) {
             throw new IllegalArgumentException("Missing AWS_S3_BUCKET_NAME environment variable");
         }
+
+        this.fileCounter = new AtomicInteger(1);
     }
 
     // Upload file to S3 bucket
     public String uploadFile(MultipartFile multipartFile) {
         File file = convertMultipartFileToFile(multipartFile);
-        String fileName = multipartFile.getOriginalFilename();
+
+        // Create a file name using the counter
+        String fileName = "img_" + fileCounter.getAndIncrement();
 
         try {
             amazonS3.putObject(new PutObjectRequest(bucketName, fileName, file));
