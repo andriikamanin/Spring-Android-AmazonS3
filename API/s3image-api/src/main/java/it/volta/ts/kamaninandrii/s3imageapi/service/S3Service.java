@@ -1,8 +1,7 @@
 package it.volta.ts.kamaninandrii.s3imageapi.service;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.*;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +10,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -70,5 +71,41 @@ public class S3Service {
             throw new RuntimeException("Error converting MultipartFile to File", e);
         }
         return file;
+    }
+
+
+    public InputStream getRandomFile() {
+        // Получаем список всех объектов в бакете
+        ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request()
+                .withBucketName(bucketName);
+        ListObjectsV2Result result = amazonS3.listObjectsV2(listObjectsV2Request);
+
+        // Получаем список файлов
+        List<S3ObjectSummary> objectSummaries = result.getObjectSummaries();
+
+        if (objectSummaries.isEmpty()) {
+            throw new RuntimeException("No files found in the bucket");
+        }
+
+        // Выбираем случайный файл из списка
+        Random random = new Random();
+        S3ObjectSummary randomObjectSummary = objectSummaries.get(random.nextInt(objectSummaries.size()));
+
+        // Загружаем файл
+        S3Object s3Object = amazonS3.getObject(bucketName, randomObjectSummary.getKey());
+        return s3Object.getObjectContent();
+    }
+
+
+    public String getRandomFileName() {
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucketName);
+        ObjectListing objectListing = amazonS3.listObjects(listObjectsRequest);
+        List<S3ObjectSummary> objectSummaries = objectListing.getObjectSummaries();
+
+        Random rand = new Random();
+        S3ObjectSummary randomObject = objectSummaries.get(rand.nextInt(objectSummaries.size()));
+
+        return randomObject.getKey(); // Возвращает случайное имя файла
     }
 }

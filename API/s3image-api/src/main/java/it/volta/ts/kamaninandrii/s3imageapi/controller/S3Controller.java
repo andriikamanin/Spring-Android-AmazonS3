@@ -14,6 +14,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import java.io.IOException;
 import java.io.InputStream;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/s3")
 public class S3Controller {
@@ -35,6 +36,23 @@ public class S3Controller {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(resource.contentLength())
+                .body(resource);
+    }
+
+
+    @GetMapping("/random-file")
+    public ResponseEntity<Resource> getRandomFile() throws IOException {
+        String randomFileName = s3Service.getRandomFileName();
+        InputStream fileInputStream = s3Service.downloadFile(randomFileName);
+        System.out.println("Trying to download file: " + randomFileName);
+        // Здесь предполагается, что файл — это изображение. Можно изменить в зависимости от типа файла.
+        String contentType = "image/jpeg";  // Например, для JPG изображений
+
+        ByteArrayResource resource = new ByteArrayResource(fileInputStream.readAllBytes());
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
                 .contentLength(resource.contentLength())
                 .body(resource);
     }
