@@ -1,8 +1,4 @@
-Here’s the README in English:
 
-⸻
-
-S3 Image API
 
 This project is an API for working with AWS S3. It allows you to upload and download images to/from S3 cloud storage using Spring Boot.
 
