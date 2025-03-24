@@ -29,13 +29,14 @@ public class S3Controller {
     }
 
 
-    @GetMapping("/download/{fileName}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) throws IOException {
+    @GetMapping("/file-url/{fileName}")
+    public ResponseEntity<Resource> getFileUrl(@PathVariable String fileName) throws IOException {
         InputStream fileInputStream = s3Service.downloadFile(fileName);
         ByteArrayResource resource = new ByteArrayResource(fileInputStream.readAllBytes());
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + fileName) // Изменено на "inline"
+                .contentType(MediaType.IMAGE_JPEG) // Укажите правильный MIME-тип, если изображения могут быть PNG или другие форматы, можно определить динамически
                 .contentLength(resource.contentLength())
                 .body(resource);
     }

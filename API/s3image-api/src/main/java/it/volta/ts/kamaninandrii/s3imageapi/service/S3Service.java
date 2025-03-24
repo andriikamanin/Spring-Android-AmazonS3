@@ -58,8 +58,12 @@ public class S3Service {
 
     // Download file from S3 bucket
     public InputStream downloadFile(String fileName) {
-        S3Object s3Object = amazonS3.getObject(bucketName, fileName);
-        return s3Object.getObjectContent();
+        try {
+            S3Object s3Object = amazonS3.getObject(bucketName, fileName);
+            return s3Object.getObjectContent();
+        } catch (AmazonS3Exception e) {
+            throw new RuntimeException("Ошибка загрузки файла: " + fileName, e);
+        }
     }
 
     // Convert MultipartFile to File
@@ -106,5 +110,9 @@ public class S3Service {
         S3ObjectSummary randomObject = objectSummaries.get(rand.nextInt(objectSummaries.size()));
 
         return randomObject.getKey();
+    }
+
+    public String getFileUrl(String fileName) {
+        return amazonS3.getUrl(bucketName, fileName).toString();
     }
 }
