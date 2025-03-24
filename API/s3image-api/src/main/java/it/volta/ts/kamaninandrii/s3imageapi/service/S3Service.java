@@ -24,13 +24,13 @@ public class S3Service {
     public S3Service(AmazonS3 amazonS3) {
         this.amazonS3 = amazonS3;
 
-        // Загружаем .env файл
+
         Dotenv dotenv = Dotenv.load();
 
-        // Получаем имя S3 бакета из .env
+
         this.bucketName = dotenv.get("AWS_BUCKET_NAME");
 
-        // Проверяем, что переменная окружения с именем бакета получена
+
         if (bucketName == null) {
             throw new IllegalArgumentException("Missing AWS_S3_BUCKET_NAME environment variable");
         }
@@ -38,7 +38,7 @@ public class S3Service {
         this.fileCounter = new AtomicInteger(1);
     }
 
-    // Upload file to S3 bucket
+
     public String uploadFile(MultipartFile multipartFile) {
         File file = convertMultipartFileToFile(multipartFile);
 
@@ -52,7 +52,7 @@ public class S3Service {
             e.printStackTrace();
             return "Error uploading file";
         } finally {
-            file.delete(); // Удаляем временный файл после загрузки
+            file.delete();
         }
     }
 
@@ -75,23 +75,22 @@ public class S3Service {
 
 
     public InputStream getRandomFile() {
-        // Получаем список всех объектов в бакете
+
         ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request()
                 .withBucketName(bucketName);
         ListObjectsV2Result result = amazonS3.listObjectsV2(listObjectsV2Request);
 
-        // Получаем список файлов
+
         List<S3ObjectSummary> objectSummaries = result.getObjectSummaries();
 
         if (objectSummaries.isEmpty()) {
             throw new RuntimeException("No files found in the bucket");
         }
 
-        // Выбираем случайный файл из списка
+
         Random random = new Random();
         S3ObjectSummary randomObjectSummary = objectSummaries.get(random.nextInt(objectSummaries.size()));
 
-        // Загружаем файл
         S3Object s3Object = amazonS3.getObject(bucketName, randomObjectSummary.getKey());
         return s3Object.getObjectContent();
     }
@@ -106,6 +105,6 @@ public class S3Service {
         Random rand = new Random();
         S3ObjectSummary randomObject = objectSummaries.get(rand.nextInt(objectSummaries.size()));
 
-        return randomObject.getKey(); // Возвращает случайное имя файла
+        return randomObject.getKey();
     }
 }

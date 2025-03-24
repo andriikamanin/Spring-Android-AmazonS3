@@ -22,13 +22,13 @@ public class S3Controller {
     @Autowired
     private S3Service s3Service;
 
-    // Upload a file to S3
+
     @PostMapping("/upload")
     public String uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
         return s3Service.uploadFile(file);
     }
 
-    // Download a file from S3
+
     @GetMapping("/download/{fileName}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) throws IOException {
         InputStream fileInputStream = s3Service.downloadFile(fileName);
@@ -46,8 +46,7 @@ public class S3Controller {
         String randomFileName = s3Service.getRandomFileName();
         InputStream fileInputStream = s3Service.downloadFile(randomFileName);
         System.out.println("Trying to download file: " + randomFileName);
-        // Здесь предполагается, что файл — это изображение. Можно изменить в зависимости от типа файла.
-        String contentType = "image/jpeg";  // Например, для JPG изображений
+        String contentType = "image/jpeg";
 
         ByteArrayResource resource = new ByteArrayResource(fileInputStream.readAllBytes());
 
